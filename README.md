@@ -8,3 +8,8 @@
 
 2.在main.js中使用 Vue.prototye 为vue原型设置新的属性
 
+### day2
+
+1.通用crud接口封装
+
+2.文件上传与静态资源的访问
