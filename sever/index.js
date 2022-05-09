@@ -2,7 +2,7 @@ const express = require('express')
 
 const app = express() 
 
-
+app.set('secret','hshshshshsh') //为app实例挂载全局变量 应该是一个环境变量
 app.use(require('cors')())
 app.use(express.json())
 
