@@ -7,6 +7,21 @@ import http from './http'
 import './style.css'
 
 
+Vue.mixin({
+  computed: {
+    uploadUrl() {
+      return this.$http.defaults.baseURL + '/upload'
+    }
+  },
+  methods: {
+    getAuthHeaders() {
+      return {
+        Authorization: 'Bearer ' + (localStorage.token || "")
+      }
+    }
+  }
+})
+
 Vue.config.productionTip = false
 Vue.prototype.$http = http
 

@@ -1,13 +1,16 @@
 module.exports = (app) => {
 
   const express = require('express')
-  const inflection = require('inflection')
+  
+  const jwt = require('jsonwebtoken')
   const router = express.Router({
     mergeParams:true  //合并父级url参数
   })  //子路由
   const multer = require('multer') //用于处理上传文件
   const upload = multer({dest:__dirname + '/../../uploads'}) //文件上传位置  dirname表示当前位置
-  
+  const assert = require('http-assert')
+  const authMiddleware = require('../../middleware/auth')
+  const resourceMiddlware = require('../../middleware/resource')
   //引入模型文件
   // const req.Model = require('../../models/req.Model')
 
@@ -43,10 +46,7 @@ module.exports = (app) => {
     res.send(model) //返回前端
   })
 
-  app.use('/admin/api/rest/:resource',async(req,res,next) => {
-    req.Model = require(`../../models/${inflection.classify(req.params.resource)}`)
-    next()
-  },router) //挂载子路由
+  app.use('/admin/api/rest/:resource', authMiddleware() ,resourceMiddlware(),router) //挂载子路由
 
   app.post('/admin/api/upload',upload.single('file'),async(req,res) => {
     const file = req.file  //使用中间件 为 req 挂载 file
@@ -59,21 +59,32 @@ module.exports = (app) => {
     //根据用户名找用户
     const AdminUser =require('../../models/AdminUser')
     const user = await AdminUser.findOne({username}).select('+password') //在模型字段设置中 password默认不取出
-    if(!user) {
-      return res.status(422).send({
-        message: '用户不存在'
-      })
-    }
+    assert(user,422,'用户不存在')
+    // if(!user) {
+    //   return res.status(422).send({
+    //     message: '用户不存在'
+    //   })
+    // }
     //校验密码
     const isValid =  require('bcrypt').compareSync(password,user.password)
-    if(!isValid) {
-      return res.status(422).send({
-        message: '密码错误'
-      })
-    }
+    assert(isValid,422,'密码错误')
+    // if(!isValid) {
+    //   return res.status(422).send({
+    //     message: '密码错误'
+    //   })
+    // }
     //返回token
-    const jwt = require('jsonwebtoken')
+    
     const token =  jwt.sign({ id: user._id},app.get('secret'))  //生成token  客户端不需要密钥便可以解析出token 服务端可校验客户端传来的token来校验是否token被篡改过,通过jwt.verify
     res.send(token)
   })
+
+
+  //集中处理异常
+  app.use(async(err,req,res,next) =>{
+    res.status(err.statusCode || 500).send({
+      message: err.message
+    })
+  })
+
 }
